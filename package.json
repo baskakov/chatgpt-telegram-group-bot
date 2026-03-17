@@ -1,0 +1,25 @@
+{
+  "name": "chatgpt-telegram-group-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "node-fetch": "^2.7.0",
+    "node-telegram-bot-api": "^0.67.0",
+    "openai": "^6.31.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/node-fetch": "^2.6.13",
+    "@types/node-telegram-bot-api": "^0.64.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  },
+  "private": true
+}
