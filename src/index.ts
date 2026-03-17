@@ -24,6 +24,12 @@ const SYSTEM_PROMPT  = process.env.SYSTEM_PROMPT ??
 - Будь краток, но информативен
 ВАЖНО: никогда не используй **двойные звёздочки**, только *одинарные*.`;
 
+const SYSTEM_PROMPT_EXTRA = process.env.SYSTEM_PROMPT_EXTRA ?? '';
+
+const EFFECTIVE_SYSTEM_PROMPT = SYSTEM_PROMPT_EXTRA
+  ? `${SYSTEM_PROMPT}\n\n${SYSTEM_PROMPT_EXTRA}`
+  : SYSTEM_PROMPT;
+
 /** Allowed user IDs for direct (private) chats */
 const WHITELIST_USERS: Set<number> = new Set(
   (process.env.WHITELIST_USER_IDS ?? '')
@@ -91,7 +97,7 @@ async function getChatReply(chatId: number, userText: string): Promise<string> {
   const response = await openai.chat.completions.create({
     model: OPENAI_MODEL,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: EFFECTIVE_SYSTEM_PROMPT },
       ...history,
     ],
   });
