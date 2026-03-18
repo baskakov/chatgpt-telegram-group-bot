@@ -2,6 +2,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import OpenAI from 'openai';
 import * as dotenv from 'dotenv';
 import fetch from 'node-fetch';
+import cron from 'node-cron';
 
 dotenv.config();
 
@@ -29,6 +30,11 @@ const SYSTEM_PROMPT_EXTRA = process.env.SYSTEM_PROMPT_EXTRA ?? '';
 const EFFECTIVE_SYSTEM_PROMPT = SYSTEM_PROMPT_EXTRA
   ? `${SYSTEM_PROMPT}\n\n${SYSTEM_PROMPT_EXTRA}`
   : SYSTEM_PROMPT;
+
+const SCHEDULER_ENABLED  = process.env.SCHEDULER_ENABLED === 'true';
+const SCHEDULER_CRON     = process.env.SCHEDULER_CRON ?? '0 7 * * *'; // 07:00 UTC every day
+const SCHEDULER_QUESTION = process.env.SCHEDULER_QUESTION
+  ?? 'Какие интересные события в мире происходили в сегодняшний день в прошлом? Расскажи кратко о 5 самых интересных фактах.';
 
 /** Allowed user IDs for direct (private) chats */
 const WHITELIST_USERS: Set<number> = new Set(
@@ -228,6 +234,32 @@ async function handleTextOrImage(chatId: number, text: string, replyToId?: numbe
     const errorMessage = err instanceof Error ? err.message : String(err);
     await bot.sendMessage(chatId, `❌ Ошибка: ${errorMessage}`, replyOptions);
   }
+}
+
+// ─── Scheduler ────────────────────────────────────────────────────────────────
+
+async function runScheduledBroadcast(): Promise<void> {
+  console.log(`[scheduler] Running broadcast: "${SCHEDULER_QUESTION}"`);
+
+  for (const chatId of WHITELIST_GROUPS) {
+    try {
+      await bot.sendChatAction(chatId, 'typing');
+      const reply = await getChatReply(chatId, SCHEDULER_QUESTION);
+      await bot.sendMessage(chatId, reply, { parse_mode: 'Markdown' });
+      console.log(`[scheduler] Sent to group ${chatId}`);
+    } catch (err) {
+      console.error(`[scheduler] Failed to send to group ${chatId}:`, err);
+    }
+  }
+}
+
+if (SCHEDULER_ENABLED) {
+  if (!cron.validate(SCHEDULER_CRON)) {
+    throw new Error(`Invalid SCHEDULER_CRON expression: "${SCHEDULER_CRON}"`);
+  }
+
+  cron.schedule(SCHEDULER_CRON, runScheduledBroadcast, { timezone: 'UTC' });
+  console.log(`🕐 Scheduler enabled: "${SCHEDULER_CRON}" (UTC)`);
 }
 
 // ─── Start ────────────────────────────────────────────────────────────────────
